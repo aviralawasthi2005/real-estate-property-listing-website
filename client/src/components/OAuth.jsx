@@ -9,10 +9,18 @@ export default function OAuth() {
   const navigate = useNavigate();
   const handleGoogleClick = async () => {
     try {
+      alert('Google button clicked!');
+      console.log('Google click handler started');
+      console.log('Firebase app:', app);
+      if (!app) {
+        throw new Error('Firebase app is not initialized');
+      }
       const provider = new GoogleAuthProvider();
       const auth = getAuth(app);
+      console.log('Auth initialized', !!auth);
 
       const result = await signInWithPopup(auth, provider);
+      console.log('Firebase popup result:', result.user.email);
 
       const res = await fetch('/api/auth/google', {
         method: 'POST',
@@ -25,11 +33,14 @@ export default function OAuth() {
           photo: result.user.photoURL,
         }),
       });
+      console.log('Backend response status:', res.status);
       const data = await res.json();
+      console.log('Backend data:', data);
       dispatch(signInSuccess(data));
       navigate('/');
     } catch (error) {
       console.log('could not sign in with google', error);
+      alert('Error during Google sign-in: ' + error.message);
     }
   };
   return (

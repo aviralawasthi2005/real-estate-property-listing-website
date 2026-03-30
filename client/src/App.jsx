@@ -10,28 +10,36 @@ import CreateListing from './pages/CreateListing';
 import UpdateListing from './pages/UpdateListing';
 import Listing from './pages/Listing';
 import Search from './pages/Search';
+import Chat from './pages/Chat';
+import Community from './pages/Community';
+import ChatBot from './components/ChatBot';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Header />
-      <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/sign-in' element={<SignIn />} />
-        <Route path='/sign-up' element={<SignUp />} />
-        <Route path='/about' element={<About />} />
-        <Route path='/search' element={<Search />} />
-        <Route path='/listing/:listingId' element={<Listing />} />
+    <div className='min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300'>
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          <Route path='/' element={<Home />} />
+          <Route path='/sign-in' element={<SignIn />} />
+          <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/about' element={<About />} />
+          <Route path='/search' element={<Search />} />
+          <Route path='/community' element={<Community />} />
+          <Route path='/listing/:listingId' element={<Listing />} />
 
-        <Route element={<PrivateRoute />}>
-          <Route path='/profile' element={<Profile />} />
-          <Route path='/create-listing' element={<CreateListing />} />
-          <Route
-            path='/update-listing/:listingId'
-            element={<UpdateListing />}
-          />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          <Route element={<PrivateRoute />}>
+            <Route path='/profile' element={<Profile />} />
+            <Route path='/create-listing' element={<CreateListing />} />
+            <Route path='/chat' element={<Chat />} />
+            <Route
+              path='/update-listing/:listingId'
+              element={<UpdateListing />}
+            />
+          </Route>
+        </Routes>
+        <ChatBot />
+      </BrowserRouter>
+    </div>
   );
 }

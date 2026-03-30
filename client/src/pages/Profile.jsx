@@ -18,6 +18,9 @@ import {
 } from '../redux/user/userSlice';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { User, Mail, Lock, Camera, LogOut, Trash2, LayoutList, PlusCircle, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
+import { cn } from '../utils/cn';
+
 export default function Profile() {
   const fileRef = useRef(null);
   const { currentUser, loading, error } = useSelector((state) => state.user);
@@ -29,12 +32,6 @@ export default function Profile() {
   const [showListingsError, setShowListingsError] = useState(false);
   const [userListings, setUserListings] = useState([]);
   const dispatch = useDispatch();
-
-  // firebase storage
-  // allow read;
-  // allow write: if
-  // request.resource.size < 2 * 1024 * 1024 &&
-  // request.resource.contentType.matches('image/.*')
 
   useEffect(() => {
     if (file) {
@@ -89,12 +86,14 @@ export default function Profile() {
 
       dispatch(updateUserSuccess(data));
       setUpdateSuccess(true);
+      setTimeout(() => setUpdateSuccess(false), 3000);
     } catch (error) {
       dispatch(updateUserFailure(error.message));
     }
   };
 
   const handleDeleteUser = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
     try {
       dispatch(deleteUserStart());
       const res = await fetch(`/api/user/delete/${currentUser._id}`, {
@@ -135,7 +134,6 @@ export default function Profile() {
         setShowListingsError(true);
         return;
       }
-
       setUserListings(data);
     } catch (error) {
       setShowListingsError(true);
@@ -143,16 +141,15 @@ export default function Profile() {
   };
 
   const handleListingDelete = async (listingId) => {
+    if (!window.confirm('Delete this listing?')) return;
     try {
       const res = await fetch(`/api/listing/delete/${listingId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success === false) {
-        console.log(data.message);
         return;
       }
-
       setUserListings((prev) =>
         prev.filter((listing) => listing._id !== listingId)
       );
@@ -160,134 +157,226 @@ export default function Profile() {
       console.log(error.message);
     }
   };
+
   return (
-    <div className='p-3 max-w-lg mx-auto'>
-      <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
-      <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-        <input
-          onChange={(e) => setFile(e.target.files[0])}
-          type='file'
-          ref={fileRef}
-          hidden
-          accept='image/*'
-        />
-        <img
-          onClick={() => fileRef.current.click()}
-          src={formData.avatar || currentUser.avatar}
-          alt='profile'
-          className='rounded-full h-24 w-24 object-cover cursor-pointer self-center mt-2'
-        />
-        <p className='text-sm self-center'>
-          {fileUploadError ? (
-            <span className='text-red-700'>
-              Error Image upload (image must be less than 2 mb)
-            </span>
-          ) : filePerc > 0 && filePerc < 100 ? (
-            <span className='text-slate-700'>{`Uploading ${filePerc}%`}</span>
-          ) : filePerc === 100 ? (
-            <span className='text-green-700'>Image successfully uploaded!</span>
-          ) : (
-            ''
-          )}
-        </p>
-        <input
-          type='text'
-          placeholder='username'
-          defaultValue={currentUser.username}
-          id='username'
-          className='border p-3 rounded-lg'
-          onChange={handleChange}
-        />
-        <input
-          type='email'
-          placeholder='email'
-          id='email'
-          defaultValue={currentUser.email}
-          className='border p-3 rounded-lg'
-          onChange={handleChange}
-        />
-        <input
-          type='password'
-          placeholder='password'
-          onChange={handleChange}
-          id='password'
-          className='border p-3 rounded-lg'
-        />
-        <button
-          disabled={loading}
-          className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'
-        >
-          {loading ? 'Loading...' : 'Update'}
-        </button>
-        <Link
-          className='bg-green-700 text-white p-3 rounded-lg uppercase text-center hover:opacity-95'
-          to={'/create-listing'}
-        >
-          Create Listing
-        </Link>
-      </form>
-      <div className='flex justify-between mt-5'>
-        <span
-          onClick={handleDeleteUser}
-          className='text-red-700 cursor-pointer'
-        >
-          Delete account
-        </span>
-        <span onClick={handleSignOut} className='text-red-700 cursor-pointer'>
-          Sign out
-        </span>
-      </div>
-
-      <p className='text-red-700 mt-5'>{error ? error : ''}</p>
-      <p className='text-green-700 mt-5'>
-        {updateSuccess ? 'User is updated successfully!' : ''}
-      </p>
-      <button onClick={handleShowListings} className='text-green-700 w-full'>
-        Show Listings
-      </button>
-      <p className='text-red-700 mt-5'>
-        {showListingsError ? 'Error showing listings' : ''}
-      </p>
-
-      {userListings && userListings.length > 0 && (
-        <div className='flex flex-col gap-4'>
-          <h1 className='text-center mt-7 text-2xl font-semibold'>
-            Your Listings
-          </h1>
-          {userListings.map((listing) => (
-            <div
-              key={listing._id}
-              className='border rounded-lg p-3 flex justify-between items-center gap-4'
-            >
-              <Link to={`/listing/${listing._id}`}>
-                <img
-                  src={listing.imageUrls[0]}
-                  alt='listing cover'
-                  className='h-16 w-16 object-contain'
-                />
-              </Link>
-              <Link
-                className='text-slate-700 font-semibold  hover:underline truncate flex-1'
-                to={`/listing/${listing._id}`}
+    <div className='max-w-4xl mx-auto p-6 py-12 flex flex-col gap-10 bg-white dark:bg-slate-900 transition-colors duration-300 min-h-screen'>
+      <div className='flex flex-col md:flex-row gap-10'>
+        {/* Profile Sidebar/Basic Info */}
+        <div className='w-full md:w-80 flex flex-col gap-6'>
+          <div className='bg-white dark:bg-slate-800 p-8 rounded-3xl border dark:border-slate-700 shadow-xl flex flex-col items-center text-center'>
+            <div className='relative group mb-6'>
+              <input
+                onChange={(e) => setFile(e.target.files[0])}
+                type='file'
+                ref={fileRef}
+                hidden
+                accept='image/*'
+              />
+              <img
+                onClick={() => fileRef.current.click()}
+                src={formData.avatar || currentUser.avatar}
+                alt='profile'
+                className='rounded-3xl h-32 w-32 object-cover cursor-pointer hover:opacity-80 transition-opacity ring-4 ring-blue-500/20'
+              />
+              <div
+                onClick={() => fileRef.current.click()}
+                className='absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-xl cursor-pointer shadow-lg hover:scale-110 transition-transform'
               >
-                <p>{listing.name}</p>
-              </Link>
-
-              <div className='flex flex-col item-center'>
-                <button
-                  onClick={() => handleListingDelete(listing._id)}
-                  className='text-red-700 uppercase'
-                >
-                  Delete
-                </button>
-                <Link to={`/update-listing/${listing._id}`}>
-                  <button className='text-green-700 uppercase'>Edit</button>
-                </Link>
+                <Camera className='h-5 w-5' />
               </div>
             </div>
-          ))}
+
+            <h2 className='text-xl font-bold text-slate-800 dark:text-slate-100 mb-1'>{currentUser.username}</h2>
+            <p className='text-sm text-slate-500 dark:text-slate-400 mb-6'>{currentUser.email}</p>
+
+            <div className='w-full space-y-3'>
+              {fileUploadError ? (
+                <div className='bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-2 rounded-lg text-xs font-medium flex items-center gap-2 justify-center'>
+                  <AlertCircle className='h-4 w-4' /> Error uploading image
+                </div>
+              ) : filePerc > 0 && filePerc < 100 ? (
+                <div className='w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden'>
+                  <div className='bg-blue-600 h-full transition-all' style={{ width: `${filePerc}%` }} />
+                </div>
+              ) : filePerc === 100 ? (
+                <div className='bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-2 rounded-lg text-xs font-medium flex items-center gap-2 justify-center'>
+                  <CheckCircle2 className='h-4 w-4' /> Upload successful
+                </div>
+              ) : null}
+            </div>
+
+            <div className='w-full pt-6 mt-6 border-t dark:border-slate-700 flex flex-col gap-3'>
+              <button
+                onClick={handleSignOut}
+                className='flex items-center justify-between w-full px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-400 transition-colors group'
+              >
+                <div className='flex items-center gap-3 font-bold'>
+                  <LogOut className='h-5 w-5' /> Sign Out
+                </div>
+                <ChevronRight className='h-4 w-4 opacity-0 group-hover:opacity-100 transition-all' />
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                className='flex items-center justify-between w-full px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors group'
+              >
+                <div className='flex items-center gap-3 font-bold'>
+                  <Trash2 className='h-5 w-5' /> Delete Account
+                </div>
+                <ChevronRight className='h-4 w-4 opacity-0 group-hover:opacity-100 transition-all' />
+              </button>
+            </div>
+          </div>
+
+          <Link
+            className='bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-3xl font-bold uppercase text-center shadow-lg hover:shadow-blue-500/30 transition-shadow flex items-center justify-center gap-2'
+            to={'/create-listing'}
+          >
+            <PlusCircle className='h-5 w-5' /> Create Listing
+          </Link>
         </div>
-      )}
+
+        {/* Edit Profile Form */}
+        <div className='flex-1 space-y-8'>
+          <div className='bg-white dark:bg-slate-800 p-8 rounded-3xl border dark:border-slate-700 shadow-xl'>
+            <h1 className='text-2xl font-bold text-slate-800 dark:text-slate-100 mb-8'>Account Settings</h1>
+            <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <label className='text-sm font-bold text-slate-700 dark:text-slate-300 ml-1'>Username</label>
+                  <div className='relative'>
+                    <input
+                      type='text'
+                      placeholder='username'
+                      defaultValue={currentUser.username}
+                      id='username'
+                      className='w-full border dark:border-slate-700 p-4 pl-12 rounded-2xl bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-slate-200'
+                      onChange={handleChange}
+                    />
+                    <User className='absolute left-4 top-4 h-5 w-5 text-slate-400' />
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-bold text-slate-700 dark:text-slate-300 ml-1'>Email Address</label>
+                  <div className='relative'>
+                    <input
+                      type='email'
+                      placeholder='email'
+                      id='email'
+                      defaultValue={currentUser.email}
+                      className='w-full border dark:border-slate-700 p-4 pl-12 rounded-2xl bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-slate-200'
+                      onChange={handleChange}
+                    />
+                    <Mail className='absolute left-4 top-4 h-5 w-5 text-slate-400' />
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-bold text-slate-700 dark:text-slate-300 ml-1'>New Password</label>
+                  <div className='relative'>
+                    <input
+                      type='password'
+                      placeholder='••••••••'
+                      onChange={handleChange}
+                      id='password'
+                      className='w-full border dark:border-slate-700 p-4 pl-12 rounded-2xl bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-slate-200'
+                    />
+                    <Lock className='absolute left-4 top-4 h-5 w-5 text-slate-400' />
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex flex-col gap-4 mt-2'>
+                <button
+                  disabled={loading}
+                  className='bg-slate-900 dark:bg-blue-600 text-white rounded-2xl p-4 font-bold uppercase hover:bg-slate-800 dark:hover:bg-blue-500 transition-all shadow-xl disabled:opacity-80 active:scale-95'
+                >
+                  {loading ? 'Saving Changes...' : 'Update Settings'}
+                </button>
+                {updateSuccess && (
+                  <p className='text-center text-green-600 font-bold animate-in fade-in slide-in-from-top-2'>
+                    Changes saved successfully!
+                  </p>
+                )}
+                {error && (
+                  <p className='bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-xl text-center font-bold'>
+                    {error}
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className='bg-white dark:bg-slate-800 p-8 rounded-3xl border dark:border-slate-700 shadow-xl overflow-hidden'>
+            <div className='flex items-center justify-between mb-8'>
+              <h2 className='text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3'>
+                <LayoutList className='h-6 w-6 text-blue-600' /> Your Listings
+              </h2>
+              <button
+                onClick={handleShowListings}
+                className='text-blue-600 dark:text-blue-400 font-bold hover:underline py-2'
+              >
+                {userListings.length > 0 ? 'Refresh List' : 'Show All'}
+              </button>
+            </div>
+
+            {showListingsError && (
+              <div className='bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-center font-bold'>
+                Error retrieving listings. Please try again.
+              </div>
+            )}
+
+            {userListings && userListings.length > 0 ? (
+              <div className='flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar'>
+                {userListings.map((listing) => (
+                  <div
+                    key={listing._id}
+                    className='bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 flex items-center gap-4 group border border-transparent hover:border-blue-100 dark:hover:border-blue-900 transition-all'
+                  >
+                    <Link to={`/listing/${listing._id}`} className='shrink-0'>
+                      <img
+                        src={listing.imageUrls[0]}
+                        alt='listing'
+                        className='h-20 w-24 object-cover rounded-xl shadow-sm'
+                      />
+                    </Link>
+                    <Link
+                      className='flex-1 min-w-0'
+                      to={`/listing/${listing._id}`}
+                    >
+                      <h3 className='text-slate-800 dark:text-slate-100 font-bold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors'>
+                        {listing.name}
+                      </h3>
+                      <p className='text-slate-500 text-sm font-medium'>
+                        ${listing.regularPrice.toLocaleString()} {listing.type === 'rent' ? '/ mo' : ''}
+                      </p>
+                    </Link>
+
+                    <div className='flex gap-2'>
+                      <Link to={`/update-listing/${listing._id}`}>
+                        <button className='bg-white dark:bg-slate-800 p-2.5 rounded-xl text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border dark:border-slate-700 shadow-sm'>
+                          <PlusCircle className='h-5 w-5' />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => handleListingDelete(listing._id)}
+                        className='bg-white dark:bg-slate-800 p-2.5 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all border dark:border-slate-700 shadow-sm'
+                      >
+                        <Trash2 className='h-5 w-5' />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='text-center py-10 text-slate-400'>
+                <p className='font-medium'>No listings found. Start and create one today!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+

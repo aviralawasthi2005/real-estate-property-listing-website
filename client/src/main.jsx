@@ -6,10 +6,17 @@ import { persistor, store } from './redux/store.js';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
+import { SocketContextProvider } from './context/SocketContext.jsx';
+import { ThemeContextProvider } from './context/ThemeContext.jsx';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <PersistGate loading={null} persistor={persistor}>
-      <App />
+      <ThemeContextProvider>
+        <SocketContextProvider>
+          <App />
+        </SocketContextProvider>
+      </ThemeContextProvider>
     </PersistGate>
   </Provider>
 );

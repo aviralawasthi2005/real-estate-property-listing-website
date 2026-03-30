@@ -1,11 +1,15 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import path from 'path';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
-import cookieParser from 'cookie-parser';
-import path from 'path';
+import { app, server } from './socket/socket.js';
+import messageRouter from './routes/message.route.js';
+import chatbotRouter from './routes/chatbot.route.js';
+
 dotenv.config();
 
 mongoose
@@ -17,21 +21,20 @@ mongoose
     console.log(err);
   });
 
-  const __dirname = path.resolve();
-
-const app = express();
+const __dirname = path.resolve();
 
 app.use(express.json());
-
 app.use(cookieParser());
 
-app.listen(3000, () => {
+server.listen(3000, () => {
   console.log('Server is running on port 3000!');
 });
 
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
+app.use('/api/messages', messageRouter);
+app.use('/api/chatbot', chatbotRouter);
 
 
 app.use(express.static(path.join(__dirname, '/client/dist')));
