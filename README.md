@@ -2,13 +2,15 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v20+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Express](https://img.shields.io/badge/Express-4.18-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white)](https://socket.io/)
 [![Google Gemini](https://img.shields.io/badge/AI-Gemini%202.5-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-A full-stack, enterprise-grade real estate property listing and marketplace platform built on the MERN stack with real-time direct messaging, intelligent conversational AI property assistance, comprehensive search and filtering, and production-hardened system architecture.
+A full-stack, enterprise-grade real estate property listing and marketplace platform built on the MERN stack with **TypeScript type contracts**, real-time direct messaging, intelligent conversational AI property assistance, comprehensive search and filtering, and production-hardened system architecture.
 
 ---
 
@@ -18,6 +20,7 @@ A full-stack, enterprise-grade real estate property listing and marketplace plat
   - [High-Level Architecture](#high-level-architecture)
   - [Tiered System Design](#tiered-system-design)
   - [Sequence & Data Flow Diagrams](#sequence--data-flow-diagrams)
+- [TypeScript Architecture & Contracts](#-typescript-architecture--contracts)
 - [Database Schema & Data Models](#-database-schema--data-models)
 - [Production Engineering & Security Hardening](#-production-engineering--security-hardening)
 - [Scalability & High Availability Strategy](#-scalability--high-availability-strategy)
@@ -40,7 +43,7 @@ The PrimeEstate application is designed following a **decoupled, multi-tier micr
 graph TB
     subgraph Client Tier
         Browser["Modern Browser / Mobile Web Client"]
-        SPA["React 18 SPA (Vite + Redux Toolkit)"]
+        SPA["React 18 SPA (Vite + Redux Toolkit + TypeScript Services)"]
         Browser --> SPA
     end
 
@@ -87,7 +90,7 @@ graph TB
 
 | Tier | Component | Responsibilities & Design Patterns |
 | :--- | :--- | :--- |
-| **Presentation Tier** | React 18, Redux Toolkit, Tailwind CSS | Single Page Application (SPA), optimistic UI updates, persistent client auth state via `redux-persist`, responsive layout with dark mode toggle, interactive property carousels via Swiper. |
+| **Presentation Tier** | React 18, TypeScript, Redux Toolkit, Tailwind CSS | Single Page Application (SPA), typed domain models, optimistic UI updates, persistent client auth state via `redux-persist`, responsive layout with dark mode toggle, interactive property carousels via Swiper. |
 | **Transport & Real-Time Tier** | Socket.IO Client & Server | Full-duplex bidirectional event bus for instant 1-to-1 messaging, user presence tracking (online/offline heartbeat), automatic reconnection and socket lifecycle handling. |
 | **API & Gateway Tier** | Express 4.18 REST Engine | Centralized routing, request validation, cookie-based JWT token verification, centralized error interception, rate limiting per IP and route classification. |
 | **Service & Business Tier** | Controllers & Sanitizers | User account lifecycle, listing management, multi-criteria filtering, text and compound query building, AI prompt engineering and graceful fallback mechanisms. |
@@ -181,6 +184,45 @@ sequenceDiagram
 
 ---
 
+## 🔷 TypeScript Architecture & Contracts
+
+The application features full TypeScript integration across frontend services and backend domain models:
+
+### 1. Client Domain Interfaces ([`client/src/types/index.ts`](client/src/types/index.ts))
+- **`User`**, **`AuthState`**, **`SignInCredentials`**, **`SignUpCredentials`**
+- **`Listing`**, **`PropertyType`**, **`CreateListingInput`**, **`UpdateListingInput`**, **`SearchFilterParams`**
+- **`Message`**, **`Conversation`**, **`SendMessagePayload`**
+- **`ChatbotMessage`**, **`ChatbotRequest`**, **`ChatbotResponse`**
+- **`HealthCheckResponse`**, **`ApiResponse<T>`**
+
+### 2. Typed API Client ([`client/src/services/api.client.ts`](client/src/services/api.client.ts))
+Provides end-to-end type safety for network operations:
+```typescript
+import { api } from './services/api.client';
+
+// Fully typed request and response
+const listings = await api.listings.getListings({
+  type: 'sale',
+  offer: true,
+  searchTerm: 'penthouse',
+  limit: 10,
+});
+```
+
+### 3. Custom Typed React Hook ([`client/src/hooks/useListingSearch.ts`](client/src/hooks/useListingSearch.ts))
+Encapsulates stateful search, debounce, and filtering with typed parameters and return values:
+```typescript
+const { listings, loading, error, filters, updateFilters } = useListingSearch({
+  type: 'sale',
+  limit: 9,
+});
+```
+
+### 4. Backend Ambient Declarations ([`api/types/index.d.ts`](api/types/index.d.ts))
+Defines Express `AuthenticatedRequest` with `req.user`, Mongoose schema document interfaces (`IUserDocument`, `IListingDocument`, `IConversationDocument`, `IMessageDocument`), and `AppConfig`.
+
+---
+
 ## 🗄 Database Schema & Data Models
 
 The persistence layer uses optimized MongoDB schemas structured for low-latency queries and scalable relationship references.
@@ -243,8 +285,6 @@ erDiagram
 
 ### Database Indexing Strategy
 
-To guarantee sub-50ms query times even with tens of thousands of properties and messages:
-
 1. **`Listing` Collection**:
    - `listingSchema.index({ type: 1, offer: 1, createdAt: -1 })`: Powers landing page feeds and filtered search result sorting.
    - `listingSchema.index({ name: 'text', address: 'text', description: 'text' })`: Enables multi-field text search.
@@ -260,39 +300,15 @@ To guarantee sub-50ms query times even with tens of thousands of properties and 
 
 ## 🛡 Production Engineering & Security Hardening
 
-This codebase contains enterprise-grade defenses against common vulnerabilities:
-
-### 1. Security Headers & Defense in Depth
-- **Strict-Transport-Security (HSTS)**: Automatically activated in production (`max-age=31536000; includeSubDomains; preload`).
-- **X-Frame-Options: SAMEORIGIN**: Defends against Clickjacking attacks.
-- **X-Content-Type-Options: nosniff**: Defends against MIME-type sniffing exploits.
-- **X-XSS-Protection: 1; mode=block**: Browser XSS auditor protection.
-- **Referrer-Policy: strict-origin-when-cross-origin**: Prevents URL parameter leakage to external domains.
-
-### 2. Rate Limiting (Sliding Window Algorithm)
-- **Global API Limiter**: Max 300 requests / 15 minutes per IP.
-- **Authentication Limiter**: Max 15 attempts / 15 minutes on `/api/auth/*` to prevent credential stuffing and brute force attacks.
-- **Chatbot AI Limiter**: Max 25 queries / 15 minutes on `/api/chatbot/ask` to protect Gemini API quotas and manage compute costs.
-- Standard HTTP 429 response headers: `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
-
-### 3. Safe Query Sanitization (Anti-ReDoS & Anti-NoSQL Injection)
-- Search inputs are escaped using `escapeRegex()` before insertion into Mongoose queries, neutralizing catastrophic regular expression backtracking and unauthorized regex wildcards.
-- MongoDB pagination limits are strictly clamped between 1 and 50 records to prevent memory exhaustion from oversized queries.
-
-### 4. Resilient MongoDB Connection Lifecycle
-- Built with automatic connection pooling (`maxPoolSize: 10`, `serverSelectionTimeoutMS: 5000`).
-- Runtime event listeners for `disconnected`, `reconnected`, and `error` events.
-- Graceful shutdown handles `SIGINT` and `SIGTERM`, draining in-flight requests, closing socket connections, and closing database pools cleanly.
-
-### 5. Production Cookie Hardening
-- Authentication JWTs are transmitted in **`HttpOnly` cookies**, preventing JavaScript access and neutralizing XSS token theft.
-- Dynamic environment toggles: `secure: true` in production (requires HTTPS) and `sameSite: 'none'` (cross-site secure) or `'lax'`.
+- **Security Headers & Defense in Depth**: Strict-Transport-Security (HSTS in production), `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `X-XSS-Protection`, and Referrer Policy.
+- **Tiered Sliding Window Rate Limiting**: Dedicated protection for authentication (15 req/15m), AI queries (25 req/15m), and general API traffic (300 req/15m).
+- **Anti-ReDoS & Query Sanitization**: User search inputs are escaped with `escapeRegex()` before insertion into Mongoose queries, and pagination limits are clamped (`1 <= limit <= 50`).
+- **Resilient MongoDB Lifecycle**: Automatic connection pooling (`maxPoolSize: 10`), reconnection event handlers, and graceful shutdown on `SIGINT` / `SIGTERM`.
+- **Production Cookie Hardening**: JWTs transmitted in `HttpOnly`, `Secure` (in production), and `SameSite` cookies with 7-day expiration.
 
 ---
 
 ## 📈 Scalability & High Availability Strategy
-
-For high-traffic production deployments, this architecture readily scales as follows:
 
 ```mermaid
 flowchart LR
@@ -309,14 +325,10 @@ flowchart LR
     AppN --> MongoSecondary
 ```
 
-1. **Horizontal App Scaling**:
-   The Express application is stateless. Multiple instances can run behind Nginx or an AWS Application Load Balancer.
-2. **WebSocket Cluster Synchronization**:
-   By attaching `@socket.io/redis-adapter`, multi-instance Node servers publish and subscribe to chat messages across containers seamlessly.
-3. **Read/Write Database Separation**:
-   Listing queries and read operations can be directed to MongoDB secondary replicas, reserving the primary replica for writes.
-4. **Media CDN**:
-   Property imagery is hosted via Firebase Storage / S3 with CDN caching, keeping app server bandwidth overhead minimal.
+1. **Horizontal App Scaling**: Stateless Express server enables running multiple nodes behind an Application Load Balancer or Nginx.
+2. **WebSocket Cluster Synchronization**: Support for `@socket.io/redis-adapter` for multi-instance WebSocket broadcasts across nodes.
+3. **Read/Write Separation**: Read operations route to MongoDB secondary replicas, leaving the primary replica for writes.
+4. **Media Offloading**: Media assets stored via Firebase Storage / S3 with CDN distribution.
 
 ---
 

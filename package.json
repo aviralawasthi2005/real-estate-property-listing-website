@@ -1,7 +1,7 @@
 {
   "name": "mern-estate",
   "version": "1.0.0",
-  "description": "",
+  "description": "Production-grade MERN Real Estate Platform with Real-Time Chat and Gemini AI",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -11,7 +11,14 @@
     "client": "npm run dev --prefix client",
     "build": "npm install && npm install --prefix client && npm run build --prefix client"
   },
-  "keywords": [],
+  "keywords": [
+    "real-estate",
+    "mern",
+    "socketio",
+    "gemini-ai",
+    "typescript",
+    "production"
+  ],
   "author": "Aviral Awasthi",
   "license": "MIT",
   "dependencies": {
