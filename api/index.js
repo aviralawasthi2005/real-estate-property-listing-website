@@ -1,54 +1,92 @@
 import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import { app, server } from './socket/socket.js';
+import { config, validateEnv } from './config/environment.js';
+import { connectDB, disconnectDB } from './config/db.js';
+import { securityHeaders, corsMiddleware, requestLogger } from './middlewares/security.middleware.js';
+import { apiLimiter } from './middlewares/rateLimiter.middleware.js';
+import { globalErrorHandler, notFoundHandler } from './middlewares/error.middleware.js';
+
+import healthRouter from './routes/health.route.js';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
-import { app, server } from './socket/socket.js';
 import messageRouter from './routes/message.route.js';
 import chatbotRouter from './routes/chatbot.route.js';
 
-dotenv.config();
+// Validate environment variables at startup
+validateEnv();
 
-mongoose
-  .connect(process.env.MONGO)
-  .then(() => {
-    console.log('Connected to MongoDB!');
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+// Initialize database connection
+connectDB();
 
 const __dirname = path.resolve();
 
-app.use(express.json());
+// Standard middlewares
+app.use(securityHeaders);
+app.use(corsMiddleware);
+app.use(requestLogger);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-server.listen(3000, () => {
-  console.log('Server is running on port 3000!');
-});
+// Apply rate limiting to all /api routes
+app.use('/api', apiLimiter);
 
+// Health check endpoint (for load balancers, orchestrators, and monitoring)
+app.use('/api/health', healthRouter);
+
+// Domain API routes
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
 app.use('/api/messages', messageRouter);
 app.use('/api/chatbot', chatbotRouter);
 
+// Serve static assets in production
+const clientDistPath = path.join(__dirname, 'client', 'dist');
+app.use(express.static(clientDistPath));
 
-app.use(express.static(path.join(__dirname, '/client/dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
-})
-
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  return res.status(statusCode).json({
-    success: false,
-    statusCode,
-    message,
+app.get('*', (req, res, next) => {
+  // If request begins with /api, forward to 404 handler instead of serving index.html
+  if (req.originalUrl.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(clientDistPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(200).send('Real Estate API Server is running. Client frontend is buildable via "npm run build".');
+    }
   });
 });
+
+// Centralized 404 & error handlers
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
+
+// Start server
+const PORT = config.port;
+const runningServer = server.listen(PORT, () => {
+  console.log(`[SERVER] Estate Application Server active on port ${PORT} [${config.env} mode]`);
+});
+
+// Graceful Shutdown Handler
+const gracefulShutdown = async (signal) => {
+  console.log(`\n[SERVER] ${signal} signal received: closing HTTP server...`);
+  runningServer.close(async () => {
+    console.log('[SERVER] HTTP server closed.');
+    await disconnectDB();
+    process.exit(0);
+  });
+
+  // Force close after 10 seconds if graceful shutdown hangs
+  setTimeout(() => {
+    console.error('[SERVER] Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+export default app;
