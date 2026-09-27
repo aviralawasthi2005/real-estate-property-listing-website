@@ -15,19 +15,23 @@ export const SocketContextProvider = ({ children }) => {
 
     useEffect(() => {
         if (currentUser) {
-            const socket = io("http://localhost:3000", {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                (window.location.port === '5173' ? 'http://localhost:3000' : '/');
+
+            const socketInstance = io(backendUrl, {
                 query: {
                     userId: currentUser._id,
                 },
+                withCredentials: true,
             });
 
-            setSocket(socket);
+            setSocket(socketInstance);
 
-            socket.on("getOnlineUsers", (users) => {
+            socketInstance.on("getOnlineUsers", (users) => {
                 setOnlineUsers(users);
             });
 
-            return () => socket.close();
+            return () => socketInstance.close();
         } else {
             if (socket) {
                 socket.close();

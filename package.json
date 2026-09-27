@@ -1,17 +1,26 @@
 {
   "name": "mern-estate",
   "version": "1.0.0",
-  "description": "",
+  "description": "Production-grade MERN Real Estate Platform with Real-Time Chat and Gemini AI",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
+    "seed": "node seed_data.js",
+    "client": "npm run dev --prefix client",
     "build": "npm install && npm install --prefix client && npm run build --prefix client"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "real-estate",
+    "mern",
+    "socketio",
+    "gemini-ai",
+    "typescript",
+    "production"
+  ],
+  "author": "Aviral Awasthi",
+  "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
