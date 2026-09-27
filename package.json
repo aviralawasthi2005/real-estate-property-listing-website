@@ -7,11 +7,13 @@
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
+    "seed": "node seed_data.js",
+    "client": "npm run dev --prefix client",
     "build": "npm install && npm install --prefix client && npm run build --prefix client"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Aviral Awasthi",
+  "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
