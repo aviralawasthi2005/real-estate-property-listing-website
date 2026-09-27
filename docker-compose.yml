@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: real-estate-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGO=mongodb://mongo:27017/mern-estate
+      - JWT_SECRET=${JWT_SECRET:-production_jwt_secret_must_be_changed}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - CLIENT_ORIGIN=${CLIENT_ORIGIN:-http://localhost:3000,http://localhost:5173}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo:6.0
+    container_name: real-estate-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
