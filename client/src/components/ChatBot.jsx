@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Bot, Loader2, Home, Info, ArrowRightCircle } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Loader2, ArrowRightCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { Link } from 'react-router-dom';
+import api from '../services/api.client';
 
 export default function ChatBot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -26,12 +27,13 @@ export default function ChatBot() {
 
     const handleSend = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        const query = input.trim();
+        if (!query) return;
 
         const userMessage = {
             id: Date.now(),
             type: 'user',
-            text: input,
+            text: query,
             timestamp: new Date()
         };
 
@@ -40,8 +42,7 @@ export default function ChatBot() {
         setIsLoading(true);
 
         try {
-            // Simulate AI response logic
-            const response = await getBotResponse(input);
+            const response = await getBotResponse(query);
             const botMessage = {
                 id: Date.now() + 1,
                 type: 'bot',
@@ -54,7 +55,7 @@ export default function ChatBot() {
             setMessages((prev) => [...prev, {
                 id: Date.now() + 1,
                 type: 'bot',
-                text: 'Sorry, I encountered an error. Please try again.',
+                text: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
                 timestamp: new Date()
             }]);
         } finally {
@@ -63,50 +64,29 @@ export default function ChatBot() {
     };
 
     const getBotResponse = async (query) => {
-        try {
-            const lowerQuery = query.toLowerCase();
-            const searchKeywords = ['property', 'listing', 'house', 'apartment', 'rent', 'sale', 'find', 'search'];
-            const isSearch = searchKeywords.some(keyword => lowerQuery.includes(keyword));
-            
-            let listings = null;
-            let aiText = '';
-            
-            const res = await fetch('/api/chatbot/ask', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: query }),
-            });
-            const data = await res.json();
-            
-            if (data && data.text) {
-                aiText = data.text;
-            } else {
-                aiText = "I'm having trouble thinking right now. Please try again later.";
-            }
+        const { text } = await api.chatbot.ask(query);
+        const searchPattern = /\b(properties|property|listings?|houses?|homes?|apartments?|rent|rental|sale|buy|find|search|show)\b/i;
+        let listings = null;
+        let listingSearchError = '';
 
-            if (isSearch) {
-                const searchTerm = query.replace(/(find|show|me|listing|for|rent|sale|property|house|apartment|search|can|i|get)/gi, '').trim();
-                try {
-                    const listRes = await fetch(`/api/listing/get?searchTerm=${searchTerm}&limit=3`);
-                    const listData = await listRes.json();
-                    if (listData && listData.length > 0) {
-                        listings = listData;
-                    }
-                } catch (e) {
-                    console.error("Listing fetch error:", e);
-                }
-            }
+        if (searchPattern.test(query)) {
+            const searchTerm = query
+                .replace(/\b(?:properties|property|listings?|houses?|homes?|apartments?|rent|rental|sale|buy|find|search|show|please|me|for|in|near|can|i|get)\b/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
 
-            return {
-                text: aiText,
-                listings: listings
-            };
-        } catch (error) {
-            console.error("Chatbot error:", error);
-            return {
-                text: 'Sorry, I encountered an error connecting to my brain. Please try again.'
-            };
+            try {
+                listings = await api.listings.getListings({ searchTerm, limit: 3 });
+                if (listings.length === 0) listings = null;
+            } catch (error) {
+                console.error('Listing search error:', error);
+                listingSearchError = error instanceof Error
+                    ? `\n\nI couldn't load matching listings: ${error.message}`
+                    : "\n\nI couldn't load matching listings right now.";
+            }
         }
+
+        return { text: `${text}${listingSearchError}`, listings };
     };
 
     return (
