@@ -66,7 +66,7 @@ export const getMessages = async (req, res, next) => {
   const userId = req.user.id;
   try {
     if (!otherUserId || otherUserId === 'undefined' || !mongoose.Types.ObjectId.isValid(otherUserId)) {
-      return res.status(200).json([]);
+      return next(errorHandler(400, 'Invalid or missing user ID.'));
     }
 
     const conversation = await Conversation.findOne({

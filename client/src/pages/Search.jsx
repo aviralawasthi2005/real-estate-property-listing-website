@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ListingItem from '../components/ListingItem';
 import SkeletonListing from '../components/SkeletonListing';
-import { Search as SearchIcon, Filter, SortAsc, ChevronDown, Check, SlidersHorizontal } from 'lucide-react';
-import { cn } from '../utils/cn';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Search as SearchIcon, SlidersHorizontal, RotateCcw, ArrowUpDown, ChevronDown, Check, Sparkles } from 'lucide-react';
 
 export default function Search() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [sidebardata, setSidebardata] = useState({
     searchTerm: '',
     type: 'all',
     parking: false,
     furnished: false,
     offer: false,
-    sort: 'created_at',
+    sort: 'createdAt',
     order: 'desc',
   });
 
@@ -32,260 +32,287 @@ export default function Search() {
     const sortFromUrl = urlParams.get('sort');
     const orderFromUrl = urlParams.get('order');
 
-    if (
-      searchTermFromUrl ||
-      typeFromUrl ||
-      parkingFromUrl ||
-      furnishedFromUrl ||
-      offerFromUrl ||
-      sortFromUrl ||
-      orderFromUrl
-    ) {
-      setSidebardata({
-        searchTerm: searchTermFromUrl || '',
-        type: typeFromUrl || 'all',
-        parking: parkingFromUrl === 'true' ? true : false,
-        furnished: furnishedFromUrl === 'true' ? true : false,
-        offer: offerFromUrl === 'true' ? true : false,
-        sort: sortFromUrl || 'created_at',
-        order: orderFromUrl || 'desc',
-      });
-    }
+    setSidebardata({
+      searchTerm: searchTermFromUrl || '',
+      type: typeFromUrl || 'all',
+      parking: parkingFromUrl === 'true',
+      furnished: furnishedFromUrl === 'true',
+      offer: offerFromUrl === 'true',
+      sort: sortFromUrl || 'createdAt',
+      order: orderFromUrl || 'desc',
+    });
 
     const fetchListings = async () => {
       setLoading(true);
       setShowMore(false);
-      const searchQuery = urlParams.toString();
-      const res = await fetch(`/api/listing/get?${searchQuery}`);
-      const data = await res.json();
-      if (data.length > 8) {
-        setShowMore(true);
-      } else {
-        setShowMore(false);
+      try {
+        const searchQuery = urlParams.toString();
+        const res = await fetch(`/api/listing/get?${searchQuery}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setShowMore(data.length >= 9);
+          setListings(data);
+        } else {
+          setListings([]);
+        }
+      } catch (err) {
+        console.error('Failed to load listings', err);
+        setListings([]);
+      } finally {
+        setLoading(false);
       }
-      setListings(data);
-      setLoading(false);
     };
 
     fetchListings();
   }, [location.search]);
 
   const handleChange = (e) => {
-    if (
-      e.target.id === 'all' ||
-      e.target.id === 'rent' ||
-      e.target.id === 'sale'
-    ) {
-      setSidebardata({ ...sidebardata, type: e.target.id });
+    const { id, value, checked } = e.target;
+
+    if (id === 'all' || id === 'rent' || id === 'sale') {
+      setSidebardata((prev) => ({ ...prev, type: id }));
     }
 
-    if (e.target.id === 'searchTerm') {
-      setSidebardata({ ...sidebardata, searchTerm: e.target.value });
+    if (id === 'searchTerm') {
+      setSidebardata((prev) => ({ ...prev, searchTerm: value }));
     }
 
-    if (
-      e.target.id === 'parking' ||
-      e.target.id === 'furnished' ||
-      e.target.id === 'offer'
-    ) {
-      setSidebardata({
-        ...sidebardata,
-        [e.target.id]:
-          e.target.checked || e.target.checked === 'true' ? true : false,
-      });
+    if (id === 'parking' || id === 'furnished' || id === 'offer') {
+      setSidebardata((prev) => ({ ...prev, [id]: checked }));
     }
 
-    if (e.target.id === 'sort_order') {
-      const sort = e.target.value.split('_')[0] || 'created_at';
-      const order = e.target.value.split('_')[1] || 'desc';
-      setSidebardata({ ...sidebardata, sort, order });
+    if (id === 'sort_order') {
+      const [sort, order] = value.split('_');
+      setSidebardata((prev) => ({ ...prev, sort: sort || 'createdAt', order: order || 'desc' }));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const urlParams = new URLSearchParams();
-    urlParams.set('searchTerm', sidebardata.searchTerm);
-    urlParams.set('type', sidebardata.type);
-    urlParams.set('parking', sidebardata.parking);
-    urlParams.set('furnished', sidebardata.furnished);
-    urlParams.set('offer', sidebardata.offer);
+    if (sidebardata.searchTerm) urlParams.set('searchTerm', sidebardata.searchTerm);
+    if (sidebardata.type && sidebardata.type !== 'all') urlParams.set('type', sidebardata.type);
+    if (sidebardata.parking) urlParams.set('parking', 'true');
+    if (sidebardata.furnished) urlParams.set('furnished', 'true');
+    if (sidebardata.offer) urlParams.set('offer', 'true');
     urlParams.set('sort', sidebardata.sort);
     urlParams.set('order', sidebardata.order);
-    const searchQuery = urlParams.toString();
-    navigate(`/search?${searchQuery}`);
+    navigate(`/search?${urlParams.toString()}`);
+  };
+
+  const handleReset = () => {
+    setSidebardata({
+      searchTerm: '',
+      type: 'all',
+      parking: false,
+      furnished: false,
+      offer: false,
+      sort: 'createdAt',
+      order: 'desc',
+    });
+    navigate('/search');
   };
 
   const onShowMoreClick = async () => {
-    const numberOfListings = listings.length;
-    const startIndex = numberOfListings;
+    const startIndex = listings.length;
     const urlParams = new URLSearchParams(location.search);
     urlParams.set('startIndex', startIndex);
-    const searchQuery = urlParams.toString();
-    const res = await fetch(`/api/listing/get?${searchQuery}`);
-    const data = await res.json();
-    if (data.length < 9) {
-      setShowMore(false);
+    try {
+      const res = await fetch(`/api/listing/get?${urlParams.toString()}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        if (data.length < 9) setShowMore(false);
+        setListings((prev) => [...prev, ...data]);
+      }
+    } catch (err) {
+      console.error(err);
     }
-    setListings([...listings, ...data]);
   };
 
   return (
-    <div className='flex flex-col md:flex-row bg-white dark:bg-[#020617] min-h-screen transition-colors duration-700 pt-20'>
-      {/* Sidebar Filters */}
-      <div className='p-8 md:p-10 border-r border-slate-200/50 dark:border-white/5 md:min-h-screen w-full md:w-80 lg:w-[400px] bg-slate-50/50 dark:bg-white/[0.02] backdrop-blur-3xl relative z-10'>
-        <div className='flex items-center gap-3 mb-10'>
-          <div className='h-10 w-10 bg-indigo-600/10 rounded-xl flex items-center justify-center'>
-            <SlidersHorizontal className='h-5 w-5 text-indigo-600' />
-          </div>
-          <h2 className='text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter'>Filters</h2>
-        </div>
-
-        <form onSubmit={handleSubmit} className='flex flex-col gap-10'>
-          <div className='space-y-4'>
-            <label className='text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1'>
-              Asset Search
-            </label>
-            <div className='relative group'>
-              <input
-                type='text'
-                id='searchTerm'
-                placeholder='Search global locales...'
-                className='w-full glass-card border-none rounded-2xl p-4 pl-12 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-white placeholder:text-slate-400 outline-none transition-all'
-                value={sidebardata.searchTerm}
-                onChange={handleChange}
-              />
-              <SearchIcon className='absolute left-4 top-4.5 h-5 w-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors' />
-            </div>
-          </div>
-
-          <div className='space-y-6'>
-            <label className='text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1'>Transaction Type</label>
-            <div className='grid grid-cols-1 gap-3'>
-              {['all', 'rent', 'sale'].map((t) => (
-                <label key={t} className='flex items-center gap-4 cursor-pointer group p-4 glass-card rounded-2xl border border-transparent hover:border-indigo-500/20 transition-all'>
-                  <div className='relative flex items-center shrink-0'>
-                    <input
-                      type='checkbox'
-                      id={t}
-                      className='peer h-6 w-6 cursor-pointer appearance-none rounded-lg border-2 border-slate-300 dark:border-slate-700 transition-all checked:bg-indigo-600 checked:border-indigo-600'
-                      onChange={handleChange}
-                      checked={sidebardata.type === t}
-                    />
-                    <Check className='absolute h-4 w-4 text-white opacity-0 peer-checked:opacity-100 ml-1' />
-                  </div>
-                  <span className='capitalize text-slate-600 dark:text-slate-400 font-bold group-hover:text-indigo-600 transition-colors'>
-                    {t === 'all' ? 'Universal Access' : t}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className='space-y-6'>
-            <label className='text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1'>Amenities & Elite Features</label>
-            <div className='grid grid-cols-1 gap-3'>
-              {['offer', 'parking', 'furnished'].map((id) => (
-                <label key={id} className='flex items-center gap-3 cursor-pointer group pl-1'>
-                  <div className='relative flex items-center shrink-0'>
-                    <input
-                      type='checkbox'
-                      id={id}
-                      className='peer h-6 w-6 cursor-pointer appearance-none rounded-lg border-2 border-slate-200 dark:border-slate-800 transition-all checked:bg-indigo-600 checked:border-indigo-600'
-                      onChange={handleChange}
-                      checked={sidebardata[id]}
-                    />
-                    <Check className='absolute h-4 w-4 text-white opacity-0 peer-checked:opacity-100 ml-1' />
-                  </div>
-                  <span className='capitalize text-slate-500 dark:text-slate-400 font-bold text-sm tracking-tight capitalize'>{id}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className='space-y-4'>
-            <label className='text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1'>Priority Index</label>
-            <div className='relative'>
-              <select
-                onChange={handleChange}
-                defaultValue={'created_at_desc'}
-                id='sort_order'
-                className='w-full glass-card border-none rounded-2xl p-4 pr-12 focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-white outline-none appearance-none font-bold'
-              >
-                <option value='regularPrice_desc'>Price Index (High to Low)</option>
-                <option value='regularPrice_asc'>Price Index (Low to High)</option>
-                <option value='createdAt_desc'>Acquisition Date (Newest)</option>
-                <option value='createdAt_asc'>Acquisition Date (Oldest)</option>
-              </select>
-              <ChevronDown className='absolute right-4 top-4.5 h-5 w-5 text-slate-400 pointer-events-none' />
-            </div>
-          </div>
-
-          <button className='w-full bg-indigo-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] mt-4'>
-            Apply Filter Protocol
-          </button>
-        </form>
-      </div>
-
-      {/* Main Content Area */}
-      <div className='flex-1 p-6 md:p-12 relative overflow-hidden'>
-        {/* Background Blobs */}
-        <div className='absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none' />
-
-        <div className='relative z-10'>
-          <div className='pb-10 mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-200 dark:border-white/5'>
-            <div className='space-y-4'>
-              <div className='inline-flex items-center gap-2 text-indigo-500 font-bold uppercase tracking-[0.2em] text-[10px] px-3 py-1 rounded-full bg-indigo-500/10'>
-                Search Results
-              </div>
-              <h1 className='text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none'>
-                Discovery Portal.
-              </h1>
-            </div>
-            <div className='flex items-center gap-3 glass-card px-6 py-3 rounded-2xl'>
-              <div className='h-2 w-2 rounded-full bg-indigo-500 animate-pulse' />
-              <p className='text-slate-500 dark:text-slate-400 font-black text-sm uppercase tracking-widest'>
-                {listings.length} High-Value Assets found
-              </p>
-            </div>
-          </div>
-
-          <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-10'>
-            {!loading && listings.length === 0 && (
-              <div className='col-span-full py-32 text-center w-full space-y-6 glass-card rounded-[40px]'>
-                <p className='text-3xl text-slate-400 font-black tracking-tighter'>No assets match your current parameters.</p>
+    <div className='min-h-screen bg-slate-50 dark:bg-[#07090e] pt-24 pb-20'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='flex flex-col lg:flex-row gap-8'>
+          {/* Sidebar Filter Panel */}
+          <div className='w-full lg:w-80 shrink-0'>
+            <div className='bg-white dark:bg-slate-900/90 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm sticky top-28 space-y-6'>
+              <div className='flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800'>
+                <div className='flex items-center gap-2'>
+                  <SlidersHorizontal className='h-5 w-5 text-indigo-600' />
+                  <h2 className='text-lg font-bold text-slate-900 dark:text-white'>Filters</h2>
+                </div>
                 <button
-                  onClick={() => setSidebardata({ searchTerm: '', type: 'all', parking: false, furnished: false, offer: false, sort: 'created_at', order: 'desc' })}
-                  className='text-indigo-600 font-black uppercase tracking-widest text-sm hover:underline'
+                  type='button'
+                  onClick={handleReset}
+                  className='text-xs font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors'
                 >
-                  Reset Discovery Protocol
+                  <RotateCcw className='h-3.5 w-3.5' /> Reset
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className='space-y-6'>
+                {/* Search Term */}
+                <div className='space-y-2'>
+                  <label className='text-xs font-bold uppercase tracking-wider text-slate-400'>
+                    Search Keywords
+                  </label>
+                  <div className='relative'>
+                    <input
+                      type='text'
+                      id='searchTerm'
+                      placeholder='Locality, landmark, title...'
+                      value={sidebardata.searchTerm}
+                      onChange={handleChange}
+                      className='input-field text-sm pl-10'
+                    />
+                    <SearchIcon className='absolute left-3.5 top-3.5 h-4 w-4 text-slate-400' />
+                  </div>
+                </div>
+
+                {/* Property Transaction Type */}
+                <div className='space-y-2'>
+                  <label className='text-xs font-bold uppercase tracking-wider text-slate-400'>
+                    Listing Type
+                  </label>
+                  <div className='grid grid-cols-3 gap-2'>
+                    {[
+                      { id: 'all', label: 'All' },
+                      { id: 'sale', label: 'Buy' },
+                      { id: 'rent', label: 'Rent' }
+                    ].map((type) => (
+                      <button
+                        key={type.id}
+                        type='button'
+                        id={type.id}
+                        onClick={handleChange}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center border ${
+                          sidebardata.type === type.id
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amenities & Attributes */}
+                <div className='space-y-3'>
+                  <label className='text-xs font-bold uppercase tracking-wider text-slate-400'>
+                    Preferences
+                  </label>
+                  <div className='space-y-2'>
+                    {[
+                      { id: 'offer', label: 'Special Discount Offer' },
+                      { id: 'parking', label: 'Dedicated Parking Space' },
+                      { id: 'furnished', label: 'Fully Furnished' }
+                    ].map((item) => (
+                      <label
+                        key={item.id}
+                        className='flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors'
+                      >
+                        <input
+                          type='checkbox'
+                          id={item.id}
+                          checked={sidebardata[item.id]}
+                          onChange={handleChange}
+                          className='h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700'
+                        />
+                        <span className='text-xs font-semibold text-slate-700 dark:text-slate-300'>
+                          {item.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort Order */}
+                <div className='space-y-2'>
+                  <label className='text-xs font-bold uppercase tracking-wider text-slate-400'>
+                    Sort By
+                  </label>
+                  <div className='relative'>
+                    <select
+                      id='sort_order'
+                      value={`${sidebardata.sort}_${sidebardata.order}`}
+                      onChange={handleChange}
+                      className='input-field text-xs font-semibold appearance-none pr-9'
+                    >
+                      <option value='createdAt_desc'>Newest Additions</option>
+                      <option value='regularPrice_asc'>Price: Low to High</option>
+                      <option value='regularPrice_desc'>Price: High to Low</option>
+                      <option value='createdAt_asc'>Oldest First</option>
+                    </select>
+                    <ChevronDown className='absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none' />
+                  </div>
+                </div>
+
+                {/* Apply Button */}
+                <button type='submit' className='btn-primary w-full text-xs py-3'>
+                  Apply Filters
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Results Area */}
+          <div className='flex-1 space-y-6'>
+            {/* Header / Counter */}
+            <div className='flex items-center justify-between bg-white dark:bg-slate-900/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm'>
+              <div className='flex items-center gap-2'>
+                <span className='h-2 w-2 rounded-full bg-emerald-500' />
+                <h1 className='text-lg font-bold text-slate-900 dark:text-white'>
+                  {loading ? 'Searching properties...' : `${listings.length} Properties Available`}
+                </h1>
+              </div>
+
+              {sidebardata.searchTerm && (
+                <div className='text-xs text-slate-500 dark:text-slate-400 font-medium'>
+                  Matching &ldquo;<span className='font-bold text-indigo-600 dark:text-indigo-400'>{sidebardata.searchTerm}</span>&rdquo;
+                </div>
+              )}
+            </div>
+
+            {/* Listings Grid */}
+            <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'>
+              {loading ? (
+                Array(6).fill(0).map((_, i) => <SkeletonListing key={i} />)
+              ) : listings.length === 0 ? (
+                <div className='col-span-full py-20 text-center bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 space-y-4 shadow-sm'>
+                  <div className='h-16 w-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-400'>
+                    <SearchIcon className='h-8 w-8' />
+                  </div>
+                  <h3 className='text-xl font-bold text-slate-800 dark:text-slate-200'>
+                    No matching properties found
+                  </h3>
+                  <p className='text-sm text-slate-500 max-w-sm mx-auto'>
+                    Try loosening your filter parameters or search for a broader city or locality.
+                  </p>
+                  <button onClick={handleReset} className='btn-secondary text-xs px-5 py-2.5'>
+                    Reset All Filters
+                  </button>
+                </div>
+              ) : (
+                listings.map((listing) => (
+                  <ListingItem key={listing._id} listing={listing} />
+                ))
+              )}
+            </div>
+
+            {/* Load More Button */}
+            {showMore && (
+              <div className='flex justify-center pt-8'>
+                <button
+                  onClick={onShowMoreClick}
+                  className='btn-secondary text-xs px-8 py-3 rounded-full hover:border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold'
+                >
+                  Load More Properties
                 </button>
               </div>
             )}
-
-            {loading ? (
-              Array(6).fill(0).map((_, i) => <SkeletonListing key={i} />)
-            ) : (
-              listings.map((listing) => (
-                <ListingItem key={listing._id} listing={listing} />
-              ))
-            )}
           </div>
-
-          {showMore && (
-            <div className='flex justify-center mt-20 mb-10'>
-              <button
-                onClick={onShowMoreClick}
-                className='glass-card px-12 py-5 rounded-full font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-xl'
-              >
-                Reveal more assets
-              </button>
-            </div>
-          )}
         </div>
-
-        {/* Noise Layer */}
-        <div className='noise-bg' />
       </div>
     </div>
   );
