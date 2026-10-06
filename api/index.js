@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { app, server } from './socket/socket.js';
 import { config, validateEnv } from './config/environment.js';
-import { connectDB, disconnectDB } from './config/db.js';
+import { connectDB, disconnectDB, getDbStatus } from './config/db.js';
 import { securityHeaders, corsMiddleware, requestLogger } from './middlewares/security.middleware.js';
 import { apiLimiter } from './middlewares/rateLimiter.middleware.js';
 import { globalErrorHandler, notFoundHandler } from './middlewares/error.middleware.js';
@@ -36,6 +36,18 @@ app.use('/api', apiLimiter);
 
 // Health check endpoint (for load balancers, orchestrators, and monitoring)
 app.use('/api/health', healthRouter);
+
+// Fail quickly instead of letting Mongoose buffer requests while the database is unavailable.
+app.use(['/api/user', '/api/auth', '/api/listing', '/api/messages'], (req, res, next) => {
+  if (!getDbStatus().isConnected) {
+    return res.status(503).json({
+      success: false,
+      statusCode: 503,
+      message: 'Database is unavailable. Please try again shortly.',
+    });
+  }
+  next();
+});
 
 // Domain API routes
 app.use('/api/user', userRouter);
