@@ -1,10 +1,11 @@
-import { Search as SearchIcon, Moon, Sun, Menu, X, Sparkles, PlusCircle, MessageSquare } from 'lucide-react';
+import { Search as SearchIcon, Moon, Sun, Menu, X, Sparkles, PlusCircle, MessageSquare, Crown } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { cn } from '../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSubscription } from '../hooks/useSubscription';
 
 export default function Header() {
   const { currentUser } = useSelector((state) => state.user);

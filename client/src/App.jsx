@@ -12,6 +12,7 @@ import Listing from './pages/Listing';
 import Search from './pages/Search';
 import Chat from './pages/Chat';
 import Community from './pages/Community';
+import Subscription from './pages/Subscription';
 import ChatBot from './components/ChatBot';
 
 export default function App() {
@@ -26,6 +27,8 @@ export default function App() {
           <Route path='/about' element={<About />} />
           <Route path='/search' element={<Search />} />
           <Route path='/community' element={<Community />} />
+          <Route path='/subscription' element={<Subscription />} />
+          <Route path='/pricing' element={<Subscription />} />
           <Route path='/listing/:listingId' element={<Listing />} />
 
           <Route element={<PrivateRoute />}>
