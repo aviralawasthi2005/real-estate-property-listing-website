@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import ListingItem from '../components/ListingItem';
 import SkeletonListing from '../components/SkeletonListing';
-import { Search as SearchIcon, SlidersHorizontal, RotateCcw, ArrowUpDown, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, SlidersHorizontal, RotateCcw, ArrowUpDown, ChevronDown, Check, Sparkles, Crown, Zap } from 'lucide-react';
+import { useSubscription } from '../hooks/useSubscription';
 
 export default function Search() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSubscriber, tier } = useSubscription();
 
   const [sidebardata, setSidebardata] = useState({
     searchTerm: '',
@@ -273,6 +275,37 @@ export default function Search() {
                 </div>
               )}
             </div>
+
+            {/* Subscriber intelligence / Upgrade banner */}
+            {isSubscriber ? (
+              <div className='p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-between text-xs font-semibold'>
+                <div className='flex items-center gap-2 text-indigo-700 dark:text-indigo-300'>
+                  {tier === 'elite' ? <Crown className='h-4 w-4 text-amber-500' /> : <Zap className='h-4 w-4 text-indigo-500' />}
+                  <span>{tier === 'elite' ? 'Elite VIP Privilege' : 'Pro Member Status'}: Showing AI valuation metrics & direct verified owner contacts.</span>
+                </div>
+                <span className='px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase'>
+                  Active
+                </span>
+              </div>
+            ) : (
+              <div className='p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-violet-500/10 to-amber-500/10 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs'>
+                <div className='flex items-center gap-2.5 text-slate-700 dark:text-slate-300'>
+                  <div className='p-2 rounded-xl bg-indigo-600 text-white shadow-sm'>
+                    <Sparkles className='h-4 w-4' />
+                  </div>
+                  <div>
+                    <span className='font-bold text-slate-900 dark:text-white block'>Want 24h Early Access to fresh listings & direct owner numbers?</span>
+                    <span className='text-slate-500 text-[11px]'>Join 15,000+ smart homebuyers and investors with PrimeEstate Pro.</span>
+                  </div>
+                </div>
+                <Link
+                  to='/subscription'
+                  className='px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shrink-0 self-start sm:self-center transition-colors shadow-sm'
+                >
+                  Upgrade to Pro →
+                </Link>
+              </div>
+            )}
 
             {/* Listings Grid */}
             <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6'>

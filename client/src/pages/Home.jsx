@@ -19,7 +19,9 @@ import {
   Compass,
   MessageSquare,
   Building,
-  CheckCircle2
+  CheckCircle2,
+  Crown,
+  PhoneCall
 } from 'lucide-react';
 
 const LISTING_SECTIONS = [
@@ -108,6 +110,9 @@ export default function Home() {
 
         {/* Feature Highlights Grid */}
         <FeaturesSection />
+
+        {/* Premium Membership Showcase */}
+        <MembershipShowcaseSection />
 
         {/* Real-Time Platform Stats */}
         <StatsSection />
@@ -356,6 +361,79 @@ function FeaturesSection() {
             </p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function MembershipShowcaseSection() {
+  const perks = [
+    {
+      icon: Zap,
+      title: 'PrimeAI Property Valuation',
+      desc: 'Accurate algorithmic fair-market estimates, projected rental yields, and 5-year capital appreciation forecasts.',
+      color: 'from-indigo-600 to-violet-600',
+    },
+    {
+      icon: PhoneCall,
+      title: 'Direct Verified Owner Hotline',
+      desc: 'Bypass intermediary delays and extra brokerage fees. Instant phone and WhatsApp connection with actual owners.',
+      color: 'from-emerald-500 to-teal-600',
+    },
+    {
+      icon: Crown,
+      title: 'VIP 24h Early Access',
+      desc: 'Spot hand-curated and price-reduced luxury listings a full 24 hours before they are released to the public market.',
+      color: 'from-amber-500 to-orange-500',
+    },
+  ];
+
+  return (
+    <div className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-black p-8 sm:p-14 text-white border border-indigo-500/20 shadow-2xl'>
+      {/* Decorative Aura */}
+      <div className='absolute -top-32 -right-32 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none' />
+      <div className='absolute -bottom-32 -left-32 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none' />
+
+      <div className='relative z-10 max-w-4xl mx-auto space-y-10'>
+        <div className='text-center space-y-4'>
+          <div className='inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-amber-400 border border-amber-400/30 backdrop-blur-md'>
+            <Crown className='h-3.5 w-3.5' /> Exclusive Member Privileges
+          </div>
+          <h2 className='text-3xl sm:text-5xl font-black tracking-tight leading-tight'>
+            Gain an Unfair Advantage in <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-amber-300'>Real Estate</span>
+          </h2>
+          <p className='text-slate-300 text-sm sm:text-base max-w-2xl mx-auto'>
+            Join 15,000+ smart homebuyers, tenants, and seasoned investors who save lakhs and close deals 3x faster with PrimeEstate Membership.
+          </p>
+        </div>
+
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+          {perks.map((perk, i) => (
+            <div
+              key={i}
+              className='bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transition-all duration-300 space-y-3'
+            >
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${perk.color} flex items-center justify-center text-white shadow-lg`}>
+                <perk.icon className='h-5 w-5' />
+              </div>
+              <h3 className='text-base font-bold text-white'>{perk.title}</h3>
+              <p className='text-xs text-slate-300 leading-relaxed'>{perk.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className='pt-2 flex flex-col sm:flex-row items-center justify-center gap-4 text-center'>
+          <Link
+            to='/subscription'
+            className='w-full sm:w-auto px-8 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2'
+          >
+            <Sparkles className='h-4 w-4 text-indigo-600' />
+            <span>Explore Plans from ₹799/mo</span>
+          </Link>
+          <span className='text-xs text-slate-400'>
+            14-Day Money-Back Guarantee • Cancel Anytime
+          </span>
+        </div>
       </div>
     </div>
   );
