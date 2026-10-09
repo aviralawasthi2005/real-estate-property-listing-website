@@ -58,6 +58,30 @@ const userSlice = createSlice({
       state.error = action.payload;
       state.loading = false;
     },
+    upgradeSubscription: (state, action) => {
+      if (state.currentUser) {
+        state.currentUser = {
+          ...state.currentUser,
+          isPremium: true,
+          subscriptionTier: action.payload.tier || 'pro',
+          subscriptionPeriod: action.payload.period || 'monthly',
+          subscriptionExpiresAt: action.payload.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscriptionAmount: action.payload.price || 999,
+          subscriptionUpdated: new Date().toISOString(),
+        };
+      }
+    },
+    cancelSubscription: (state) => {
+      if (state.currentUser) {
+        state.currentUser = {
+          ...state.currentUser,
+          isPremium: false,
+          subscriptionTier: 'free',
+          subscriptionPeriod: null,
+          subscriptionExpiresAt: null,
+        };
+      }
+    },
   },
 });
 
@@ -74,6 +98,8 @@ export const {
   signOutUserFailure,
   signOutUserSuccess,
   signOutUserStart,
+  upgradeSubscription,
+  cancelSubscription,
 } = userSlice.actions;
 
 export default userSlice.reducer;
