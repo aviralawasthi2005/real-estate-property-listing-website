@@ -18,8 +18,14 @@ import {
 } from '../redux/user/userSlice';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { User, Mail, Lock, Camera, LogOut, Trash2, LayoutList, PlusCircle, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
+import { 
+  User, Mail, Lock, Camera, LogOut, Trash2, LayoutList, 
+  PlusCircle, CheckCircle2, AlertCircle, ChevronRight, 
+  Crown, Sparkles, Zap, CreditCard, ShieldCheck 
+} from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useSubscription, SUBSCRIPTION_TIERS } from '../hooks/useSubscription';
+import SubscriptionModal from '../components/SubscriptionModal';
 
 export default function Profile() {
   const fileRef = useRef(null);
@@ -31,7 +37,16 @@ export default function Profile() {
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [showListingsError, setShowListingsError] = useState(false);
   const [userListings, setUserListings] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTier, setModalTier] = useState('pro');
   const dispatch = useDispatch();
+  const { tier, isSubscriber, isPro, isElite, planDetails, cancel, period, expiresAt } = useSubscription();
+
+  const handleCancelSub = () => {
+    if (window.confirm('Are you sure you want to cancel your PrimeEstate subscription? You will lose access to AI Property Valuations and direct owner contacts at the end of the current billing period.')) {
+      cancel();
+    }
+  };
 
   useEffect(() => {
     if (file) {
@@ -235,8 +250,98 @@ export default function Profile() {
           </Link>
         </div>
 
-        {/* Edit Profile Form */}
+        {/* Edit Profile Form & Subscription Info */}
         <div className='flex-1 space-y-8'>
+          {/* Subscription & Membership Card */}
+          <div className={`p-8 rounded-3xl border shadow-xl transition-all relative overflow-hidden ${
+            tier === 'elite'
+              ? 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-slate-900 border-amber-500/40'
+              : tier === 'pro'
+              ? 'bg-gradient-to-br from-indigo-500/10 via-violet-500/5 to-slate-900 border-indigo-500/40'
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+          }`}>
+            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/60 dark:border-slate-700/60'>
+              <div className='flex items-center gap-3.5'>
+                <div className={`p-3 rounded-2xl ${
+                  tier === 'elite'
+                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+                    : tier === 'pro'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                }`}>
+                  {tier === 'elite' ? <Crown className='h-6 w-6' /> : tier === 'pro' ? <Zap className='h-6 w-6' /> : <ShieldCheck className='h-6 w-6' />}
+                </div>
+                <div>
+                  <div className='flex items-center gap-2'>
+                    <h3 className='text-lg font-black text-slate-800 dark:text-white'>
+                      {planDetails.name}
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                      isSubscriber
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                    }`}>
+                      {isSubscriber ? 'Active Subscription' : 'Free Explorer'}
+                    </span>
+                  </div>
+                  <p className='text-xs text-slate-500 dark:text-slate-400 mt-0.5'>
+                    {isSubscriber
+                      ? `Renews on ${expiresAt ? new Date(expiresAt).toLocaleDateString() : 'Next Month'} (${period} billing)`
+                      : 'Upgrade to unlock AI Fair Valuation, direct owner numbers & early access'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className='flex items-center gap-2.5'>
+                {isSubscriber ? (
+                  <>
+                    <Link
+                      to='/subscription'
+                      className='px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors'
+                    >
+                      Change Plan
+                    </Link>
+                    <button
+                      type='button'
+                      onClick={handleCancelSub}
+                      className='px-3.5 py-2 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors'
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setModalTier('pro');
+                      setIsModalOpen(true);
+                    }}
+                    className='btn-primary py-2.5 px-5 text-xs font-bold shadow-md shadow-indigo-600/20'
+                  >
+                    <Sparkles className='h-3.5 w-3.5' />
+                    <span>Upgrade to Pro</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Perks checklist */}
+            <div className='pt-5'>
+              <span className='text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-3'>
+                Your Membership Privileges:
+              </span>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs'>
+                {planDetails.features.slice(0, 4).map((feat, i) => (
+                  <div key={i} className='flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium'>
+                    <CheckCircle2 className='h-4 w-4 text-emerald-500 shrink-0' />
+                    <span className='truncate'>{feat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className='bg-white dark:bg-slate-800 p-8 rounded-3xl border dark:border-slate-700 shadow-xl'>
             <h1 className='text-2xl font-bold text-slate-800 dark:text-slate-100 mb-8'>Account Settings</h1>
             <form onSubmit={handleSubmit} className='flex flex-col gap-6'>
@@ -376,6 +481,12 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <SubscriptionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        defaultTier={modalTier}
+      />
     </div>
   );
 }
