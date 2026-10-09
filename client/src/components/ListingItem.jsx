@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Bed, Bath, ArrowUpRight, Sparkles, Car, Armchair } from 'lucide-react';
+import { MapPin, Bed, Bath, ArrowUpRight, Sparkles, Car, Armchair, Crown, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSubscription } from '../hooks/useSubscription';
 
 export default function ListingItem({ listing }) {
+  const { isSubscriber } = useSubscription();
   const isRent = listing.type === 'rent';
   const hasOffer = listing.offer && listing.discountPrice > 0;
   const currentPrice = hasOffer ? listing.discountPrice : listing.regularPrice;
   const savings = hasOffer ? Number(listing.regularPrice) - Number(listing.discountPrice) : 0;
+  const isVipListing = currentPrice >= 2500000 || listing.offer;
 
   return (
     <motion.div
@@ -46,11 +49,22 @@ export default function ListingItem({ listing }) {
                 <Sparkles className='h-3 w-3' /> Save ₹{savings.toLocaleString('en-IN')}
               </span>
             )}
+
+            {isVipListing && (
+              <span className='px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 text-white backdrop-blur-md shadow-sm flex items-center gap-1'>
+                <Crown className='h-3 w-3' /> VIP
+              </span>
+            )}
           </div>
 
-          {/* Quick View Icon Pill */}
-          <div className='absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
-            <div className='h-8 w-8 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-indigo-600 dark:text-indigo-400'>
+          {/* Top Right: Subscriber Intel or Quick View */}
+          <div className='absolute top-3 right-3 z-10 flex items-center gap-1.5'>
+            {isSubscriber && (
+              <span className='px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-slate-900/85 backdrop-blur-md text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shadow-md'>
+                <Zap className='h-3 w-3' /> {listing.type === 'rent' ? '8.9% Yield' : 'High ROI'}
+              </span>
+            )}
+            <div className='h-8 w-8 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
               <ArrowUpRight className='h-4 w-4' />
             </div>
           </div>
