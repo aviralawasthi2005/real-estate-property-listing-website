@@ -14,6 +14,7 @@ import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
 import messageRouter from './routes/message.route.js';
 import chatbotRouter from './routes/chatbot.route.js';
+import paymentRouter from './routes/payment.route.js';
 
 // Validate environment variables at startup
 validateEnv();
@@ -55,6 +56,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);
 app.use('/api/messages', messageRouter);
 app.use('/api/chatbot', chatbotRouter);
+app.use('/api/payments', paymentRouter);
 
 // Serve static assets in production
 const clientDistPath = path.join(__dirname, 'client', 'dist');

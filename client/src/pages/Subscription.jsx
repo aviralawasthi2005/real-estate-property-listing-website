@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Sparkles, Check, Zap, Crown, Shield, Star, 
@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { useSubscription, SUBSCRIPTION_TIERS } from '../hooks/useSubscription';
 import SubscriptionModal from '../components/SubscriptionModal';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import api from '../services/api.client';
 
 const FAQS = [
   {
@@ -69,11 +70,33 @@ const COMPARISON_ROWS = [
 ];
 
 export default function Subscription() {
+  const location = useLocation();
   const { currentUser, tier, isSubscriber } = useSubscription();
   const [billingPeriod, setBillingPeriod] = useState('yearly');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlanTier, setSelectedPlanTier] = useState('pro');
   const [openFaq, setOpenFaq] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sessionId = params.get('session_id');
+    const checkoutStatus = params.get('checkout');
+
+    if (sessionId && checkoutStatus === 'success') {
+      const finalizeCheckout = async () => {
+        try {
+          const result = await api.payments.verifySession(sessionId);
+          if (result?.success) {
+            window.location.href = '/subscription';
+          }
+        } catch (error) {
+          console.error('Subscription verification failed', error);
+        }
+      };
+
+      finalizeCheckout();
+    }
+  }, [location.search]);
 
   const handleOpenCheckout = (planTier) => {
     if (planTier === 'free') return;
