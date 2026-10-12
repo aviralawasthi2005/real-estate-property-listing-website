@@ -141,6 +141,23 @@ class ApiClient {
   };
 
   // ---------------------------------------------------------------------------
+  // Payments API
+  // ---------------------------------------------------------------------------
+  public payments = {
+    createCheckoutSession: (payload: { tier: string; period: string; amount: number; currency?: string }) =>
+      this.request<{ success: boolean; url: string; sessionId: string }>('/payments/create-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    verifySession: (sessionId: string) =>
+      this.request<{ success: boolean; message: string; user: unknown }>('/payments/verify-session', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+      }),
+  };
+
+  // ---------------------------------------------------------------------------
   // Health & Monitoring API
   // ---------------------------------------------------------------------------
   public health = {

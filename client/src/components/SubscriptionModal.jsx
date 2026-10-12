@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useSubscription, SUBSCRIPTION_TIERS } from '../hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api.client';
 
 export default function SubscriptionModal({ isOpen, onClose, defaultTier = 'pro' }) {
   const { currentUser, subscribe } = useSubscription();
@@ -32,7 +33,7 @@ export default function SubscriptionModal({ isOpen, onClose, defaultTier = 'pro'
   const totalPrice = billingPeriod === 'yearly' ? price * 12 : price;
   const monthlySavings = (currentPlan.priceMonthly - currentPlan.priceYearly) * 12;
 
-  const handleSubscribeSubmit = (e) => {
+  const handleSubscribeSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) {
       onClose();
@@ -42,21 +43,44 @@ export default function SubscriptionModal({ isOpen, onClose, defaultTier = 'pro'
 
     setIsProcessing(true);
 
-    // Simulate fast realistic gateway transaction
-    setTimeout(() => {
+    try {
+      const response = await api.payments.createCheckoutSession({
+        tier: selectedTier,
+        period: billingPeriod,
+        amount: totalPrice,
+        currency: 'inr',
+      });
+
+      if (response?.url) {
+        window.location.href = response.url;
+        return;
+      }
+
       subscribe({
         tier: selectedTier,
         period: billingPeriod,
         price: totalPrice,
       });
-      setIsProcessing(false);
       setIsSuccess(true);
-    }, 1400);
+    } catch (error) {
+      console.error('Checkout session creation failed:', error);
+      const message = error instanceof Error ? error.message : 'Unable to start checkout right now.';
+      alert(message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleFinish = () => {
     setIsSuccess(false);
     onClose();
+  };
+
+  const stripeCheckoutHint = () => {
+    if (selectedTier === 'elite') {
+      return 'Secure Stripe checkout with card, UPI, and net banking support.';
+    }
+    return 'Secure Stripe checkout with card and UPI payment options.';
   };
 
   return (
@@ -92,6 +116,10 @@ export default function SubscriptionModal({ isOpen, onClose, defaultTier = 'pro'
                 <p className='text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg'>
                   Get instant access to AI Property Valuation, direct owner contacts, price alerts, and priority status.
                 </p>
+                <div className='mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400'>
+                  <ShieldCheck className='h-3.5 w-3.5' />
+                  {stripeCheckoutHint()}
+                </div>
 
                 {/* Plan Selector tabs */}
                 <div className='grid grid-cols-2 gap-3 mt-6'>

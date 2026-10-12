@@ -21,6 +21,8 @@ export const config = {
   mongoUri: process.env.MONGO || '',
   jwtSecret: process.env.JWT_SECRET || 'dev_jwt_secret_change_in_production',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   clientOrigin: process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',') : [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
